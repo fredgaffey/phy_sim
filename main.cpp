@@ -30,7 +30,9 @@ class f_vec{
     double dot(f_vec _v2){
       return x*_v2.x + y*_v2.y;
     }
-
+    f_vec add(f_vec v1){
+      return f_vec(x+v1.x,y+v1.y);
+    }
     f_vec(float _x1, float _y1, float _x2, float _y2){
       x = _x1 - _x2;
       y = _y1 - _y2;
@@ -57,6 +59,7 @@ struct Line{
     // solve simltaiosly
     double x = (l2.c + c)/(l2.m + m);
     double y = m*x + c;
+
     return f_vec(x,y);
   }
 
@@ -91,6 +94,8 @@ class ear {
 
 
     ear(poly* _derived_poly, int* _points){
+      // this has lots of BUGS
+      //
       // area = (1/2).a.b.sin(C) 
       f_vec a = f_vec(_points[0],_points[1],_points[2],_points[3]);
       f_vec b = f_vec(_points[0],_points[1],_points[4],_points[5]);
@@ -103,9 +108,15 @@ class ear {
       area = 0.5 * a.mag() * b.mag() * sin(c);
     
       Line na = get_nomal_scaler(a,0.5);
-      Line nb = get_nomal_scaler(a,0.5);
+      Line nb = get_nomal_scaler(b,0.5);
 
-      center = na.get_intecetion(nb);
+
+      f_vec origin = f_vec(_points[0],_points[1]);
+      center = na.get_intecetion(nb).add(origin);
+
+      printf("ear center x%F\n",center.x);
+      printf("ear center y%F\n",center.y);
+
       derived_poly = _derived_poly;
     }
 };
@@ -138,6 +149,7 @@ class poly {
 
   poly(int* point, int point_cnt, bool print = true){
     vtx* _origin = (vtx*) malloc(sizeof(vtx)*point_cnt);
+
     int x;
     int y;
     int i = 0; 
@@ -165,7 +177,7 @@ class poly {
       *(_origin+i) = vtx(x,y,prev,next,i);
     }
 
-    _origin[i].prev = _origin+point_cnt-1;
+    _origin[i-1].prev = _origin+(point_cnt-1);
     _origin[point_cnt-1].next = _origin;
 
     origin = _origin;
@@ -218,15 +230,12 @@ bool drawPoly(poly* polygon, float ran = 5, float thick = 2){
   return true;
 }
 
-bool drawEar(ear* _ear, float rad = 1000, float thick = 2){
-  double x = _ear->center.x;
-  double y = _ear->center.y;
+bool drawEar(ear* _ear, float rad = 5, float thick = 2){
+  float x = _ear->center.x;
+  float y = _ear->center.y;
   DrawCircle(x,y, rad, GREEN);
-  printf("ear center x%d\n",x);
-  printf("ear center y%d\n",y);
 
   poly polygon(*_ear);
-  assert(polygon.validate(true) != -1);
   drawPoly(&polygon);
   return true;
 }
@@ -256,8 +265,8 @@ int main(){
   poly pol = poly(&poly_arr[0],e);
 
   ear era = ear(&pol,poly_arr);
-  drawEar(&era);
-
+  // drawEar(&era);
+ 
   pol.area = 0;
   
   // drawPoly(&pol);
@@ -271,8 +280,10 @@ int main(){
     {
         BeginDrawing();
             ClearBackground(RAYWHITE);
-
             drawPoly(&pol);
+            drawEar(&era);
+            exit(1);
+            // DrawLine(1000,1000, 1000,1000,BLUE);
 
         EndDrawing();
     }
